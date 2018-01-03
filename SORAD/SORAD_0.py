@@ -10,7 +10,7 @@ class SORAD(object):
         """
         time_series: time series data.It is a list
         f_rls: forgetting factor of RLS
-        f_ms: forgetting factor of "online estimation of sample mean and variance"
+        f_ms: forgetting factor of "online estimation of sample mean and standard_deviation"
         threshold: anomaly threshold used in calculating quantile
         window_size: use previous window_size points to predict next point
         """
@@ -55,30 +55,23 @@ class SORAD(object):
             X_k = np.matrix([1] + [self.ts[k-i] for i in xrange(self.ws)]).T
             predict_Y = self.theta.T * X_k
             prediction_error = self.ts[k+1] - predict_Y.getA()[0][0] # Y_k+1 = self.ts[k+1]
-            print 'prediction error = ',  prediction_error
-            if flag_ms < 4: # 4 here can be substituted by 3,5,6,....
+            if flag_ms < 4: # transient phase: 4 can be substituted by 3,5,6
                 # update anyway
                 oemv.update(prediction_error)
                 self.update_p_theta(prediction_error, X_k)
                 flag_ms += 1
             else:
                 (mean, sd) = oemv.getMeanSD()
-                #mean = 0
-                print 'mean =' , mean
-                print 'sd =', sd
-                # calculate quantile
+                # mean = 0 calculate quantile
                 z_epsilon = stats.norm(0, sd).ppf((1-self.threshold) / 2.0) # minus !!
-                print 'epsilon =', z_epsilon
-                print '\n'
                 if mean + z_epsilon < prediction_error < mean - z_epsilon or z_epsilon < prediction_error < - z_epsilon: # normal
                     oemv.update(prediction_error)
                     self.update_p_theta(prediction_error, X_k)
                 else: # abnormal
                     anomaly_flags[k+1] = 1
                     k = k + self.ws
-                    # no updating operation
-            # ATTENTION!!!
-            k += 1
+                    # no updating operation 
+            k += 1 # ATTENTION!!!
 
         return anomaly_flags
 
