@@ -1,12 +1,13 @@
 # -*- coding:utf-8 -*-
 import math
 import numpy as np
+from numpy.linalg import LinAlgError
 from scipy import stats
 from OEMV import OEMV
 
 
 class SORAD(object):
-    def __init__(self, time_series, f_rls=0.9, f_ms=0.9, threshold=0.999999, window_size=4):
+    def __init__(self, time_series, f_rls=0.9, f_ms=0.9, threshold=0.999999, window_size=3):
         """
         time_series: time series data.It is a list
         f_rls: forgetting factor of RLS
@@ -25,8 +26,12 @@ class SORAD(object):
         """ initialize matrix P and theta """
         u0 = np.matrix([1] + [self.ts[self.ws-i-1] for i in xrange(self.ws)])
         u1 = np.matrix([1] + [self.ts[self.ws-i] for i in xrange(self.ws)])
-        P_matrix = np.linalg.inv(u0.T * u0 + self.f_rls * u1.T * u1)
-
+        try:
+            P_matrix = np.linalg.inv(u0.T * u0 + self.f_rls * u1.T * u1)
+        except LinAlgError:
+            print 'exception in P_matrix-initialization'
+            P_matrix = np.eye(self.ws + 1)
+        
         d0 = np.matrix(self.ts[self.ws])
         d1 = np.matrix(self.ts[self.ws+1])
         Z = u0.T * d0 + self.f_rls * u1.T * d1

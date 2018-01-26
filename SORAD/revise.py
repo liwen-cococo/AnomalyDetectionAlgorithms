@@ -9,7 +9,7 @@ class SORAD1(SORAD):
 
     def sorad(self):
         ts_len = self.ts.__len__()
-        anomaly_flags = [0 for _ in xrange(ts_len)]
+        anomaly_flags = [0.5 for _ in xrange(ts_len)]
         oemv = OEMV(self.f_ms)
         flag_ms = 0
         
@@ -25,8 +25,7 @@ class SORAD1(SORAD):
                 flag_ms += 1
             else:
                 (mean, sd) = oemv.getMeanSD()
-                probility_abnormal = stats.norm(0, sd).cdf(prediction_error)
-                probility_abnormal = 2 * probility_abnormal - 1 # the larger the value is, the more abnormal
+                probility_abnormal = stats.norm(0, sd).cdf(abs(prediction_error))
                 # mean = 0, calculate quantile
                 z_epsilon = stats.norm(0, sd).ppf((1-self.threshold) / 2.0) # minus !!
                 if mean + z_epsilon < prediction_error < mean - z_epsilon or z_epsilon < prediction_error < - z_epsilon: # normal
@@ -39,4 +38,4 @@ class SORAD1(SORAD):
             # ATTENTION!!!
             k += 1
 
-        return anomaly_flags
+        return anomaly_flags # min=0.5, The larger the value is, the more abnormal the point is
